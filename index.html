@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic Tac Toe</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f2f2f2;
+    }
+
+    #gameContainer {
+        text-align: center;
+    }
+
+    #ticTacToe {
+        border-collapse: collapse;
+        margin: 20px auto;
+    }
+
+    #ticTacToe td {
+        border: 2px solid #aaa;
+        width: 100px;
+        height: 100px;
+        font-size: 36px;
+        text-align: center;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    #ticTacToe td:hover {
+        background-color: #ddd;
+    }
+
+    #status {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 24px;
+    }
+
+    #status span {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .win {
+        background-color: #cfc;
+    }
+
+    .tie {
+        background-color: #ffc;
+    }
+    
+    #gameMode,
+    #player,
+    #resetButton {
+        margin-top: 20px;
+        padding: 10px 20px;
+        font-size: 16px;
+        cursor: pointer;
+        border: none;
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 5px;
+        transition: background-color 0.3s ease;
+    }
+
+    #resetButton:hover {
+        background-color: #45a049;
+    }
+
+    #buttons{
+        display: flex;
+        justify-content: space-between;
+    }
+</style>
+</head>
+<body>
+
+<div id="gameContainer">
+    <h1>Tic Tac Toe</h1>
+    <div id="modeSelection">
+        <p>Please select a game mode:</p>
+        <button id="player" onclick="startSinglePlayer()">Single Player</button>
+        <button id="player" onclick="startTwoPlayer()">Two Players</button>
+    </div>
+    
+    <p id="status" style="display: none;"><span id="playerTurn">Player X</span>'s turn</p>
+    <table id="ticTacToe" style="display: none;">
+        <tr>
+            <td onclick="cellClicked(0, 0)"></td>
+            <td onclick="cellClicked(0, 1)"></td>
+            <td onclick="cellClicked(0, 2)"></td>
+        </tr>
+        <tr>
+            <td onclick="cellClicked(1, 0)"></td>
+            <td onclick="cellClicked(1, 1)"></td>
+            <td onclick="cellClicked(1, 2)"></td>
+        </tr>
+        <tr>
+            <td onclick="cellClicked(2, 0)"></td>
+            <td onclick="cellClicked(2, 1)"></td>
+            <td onclick="cellClicked(2, 2)"></td>
+        </tr>
+    </table>
+    <p id="winMessage"></p>
+    <div id="buttons">
+        <button id="resetButton" style="display: none;" onclick="resetGame()">Reset Game</button>
+        <button id="gameMode" style="display: none;" onclick="reLoadGame()">Game Mode</button>
+    </div>
+</div>
+
+<script>
+    var currentPlayer = 'X';
+    var playerMode=1;
+    var gameBoard = [
+        ['', '', ''],
+        ['', '', ''],
+        ['', '', '']
+    ];
+
+    //single player mode function
+    function startSinglePlayer() {
+        displayDiv();
+        playerMode=1;
+    }
+
+    //Two player mode function
+    function startTwoPlayer() {
+        displayDiv();
+        playerMode=2;
+    }
+
+    //function to manage display
+    function displayDiv(){
+        document.getElementById("modeSelection").style.display = "none";
+        document.getElementById("status").style.display  ="block";
+        document.getElementById("ticTacToe").style.display  = "block";
+        document.getElementById("resetButton").style.display  ="block";
+        document.getElementById("gameMode").style.display  ="block";
+    }
+    
+
+    //evaluate cell and assign value
+    function cellClicked(row, col) {
+        if (gameBoard[row][col] === '' && !document.getElementById("winMessage").innerText) {
+            gameBoard[row][col] = currentPlayer;
+            var cell = document.getElementById("ticTacToe").rows[row].cells[col];
+            cell.innerText = currentPlayer;
+            cell.classList.add("occupied");
+            checkWinner();
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            document.getElementById("playerTurn").innerText = "Player " + currentPlayer;
+            if (playerMode==1) {
+                setTimeout(aiMove, 500);
+            }
+        }
+    }
+
+    //generate computer move in single player mode
+    function aiMove() {
+        // AI's move priorities:
+        // 1. If AI can win with next move, place symbol to achieve victory.
+        // 2. If opponent can win with next move, block them by placing symbol in critical position.
+        // 3. Otherwise, place symbol randomly in an empty cell.
+
+        // Check for winning move for AI
+        var winMove = findWinningMove('O');
+        if (winMove) {
+            makeMove(winMove.row, winMove.col);
+            return;
+        }
+
+        // Check for opponent's winning move and block it
+        var blockMove = findWinningMove('X');
+        if (blockMove) {
+            makeMove(blockMove.row, blockMove.col);
+            return;
+        }
+
+        // Otherwise, make a random move
+        var emptyCells = findEmptyCells();
+        var randomIndex = Math.floor(Math.random() * emptyCells.length);
+        var randomCell = emptyCells[randomIndex];
+        makeMove(randomCell.row, randomCell.col);
+    }
+
+    function findWinningMove(symbol) {
+        // Check rows, columns, and diagonals for potential winning move
+        // Returns the row and column of the winning move if found, null otherwise
+        for (let i = 0; i < 3; i++) {
+            // Check rows
+            if (gameBoard[i][0] === symbol && gameBoard[i][1] === symbol && gameBoard[i][2] === '') {
+                return { row: i, col: 2 };
+            }
+            if (gameBoard[i][0] === symbol && gameBoard[i][2] === symbol && gameBoard[i][1] === '') {
+                return { row: i, col: 1 };
+            }
+            if (gameBoard[i][1] === symbol && gameBoard[i][2] === symbol && gameBoard[i][0] === '') {
+                return { row: i, col: 0 };
+            }
+            // Check columns
+            if (gameBoard[0][i] === symbol && gameBoard[1][i] === symbol && gameBoard[2][i] === '') {
+                return { row: 2, col: i };
+            }
+            if (gameBoard[0][i] === symbol && gameBoard[2][i] === symbol && gameBoard[1][i] === '') {
+                return { row: 1, col: i };
+            }
+            if (gameBoard[1][i] === symbol && gameBoard[2][i] === symbol && gameBoard[0][i] === '') {
+                return { row: 0, col: i };
+            }
+        }
+        // Check diagonals
+        if (gameBoard[0][0] === symbol && gameBoard[1][1] === symbol && gameBoard[2][2] === '') {
+            return { row: 2, col: 2 };
+        }
+        if (gameBoard[0][0] === symbol && gameBoard[2][2] === symbol && gameBoard[1][1] === '') {
+            return { row: 1, col: 1 };
+        }
+        if (gameBoard[1][1] === symbol && gameBoard[2][2] === symbol && gameBoard[0][0] === '') {
+            return { row: 0, col: 0 };
+        }
+        if (gameBoard[0][2] === symbol && gameBoard[1][1] === symbol && gameBoard[2][0] === '') {
+            return { row: 2, col: 0 };
+        }
+        if (gameBoard[0][2] === symbol && gameBoard[2][0] === symbol && gameBoard[1][1] === '') {
+            return { row: 1, col: 1 };
+        }
+        if (gameBoard[1][1] === symbol && gameBoard[2][0] === symbol && gameBoard[0][2] === '') {
+            return { row: 0, col: 2 };
+        }
+        return null;
+    }
+
+    function findEmptyCells() {
+        // Find all empty cells on the board
+        var emptyCells = [];
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (gameBoard[i][j] === '') {
+                    emptyCells.push({ row: i, col: j });
+                }
+            }
+        }
+        return emptyCells;
+    }
+
+    function makeMove(row, col) {
+        // Make a move on the board
+        gameBoard[row][col] = currentPlayer;
+        var cell = document.getElementById("ticTacToe").rows[row].cells[col];
+        cell.innerText = currentPlayer;
+        cell.classList.add("occupied");
+        checkWinner();
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        document.getElementById("playerTurn").innerText = "Player " + currentPlayer;
+    }
+
+    
+
+    function checkWinner() {
+        // Check rows, columns, and diagonals for a winner
+        for (let i = 0; i < 3; i++) {
+            if (gameBoard[i][0] !== '' && gameBoard[i][0] === gameBoard[i][1] && gameBoard[i][0] === gameBoard[i][2]) {
+                endGame(gameBoard[i][0], i, 0, i, 1, i, 2);
+                return;
+            }
+            if (gameBoard[0][i] !== '' && gameBoard[0][i] === gameBoard[1][i] && gameBoard[0][i] === gameBoard[2][i]) {
+                endGame(gameBoard[0][i], 0, i, 1, i, 2, i);
+                return;
+            }
+        }
+        if (gameBoard[0][0] !== '' && gameBoard[0][0] === gameBoard[1][1] && gameBoard[0][0] === gameBoard[2][2]) {
+            endGame(gameBoard[0][0], 0, 0, 1, 1, 2, 2);
+            return;
+        }
+        if (gameBoard[0][2] !== '' && gameBoard[0][2] === gameBoard[1][1] && gameBoard[0][2] === gameBoard[2][0]) {
+            endGame(gameBoard[0][2], 0, 2, 1, 1, 2, 0);
+            return;
+        }
+
+        // Check for tie
+        if (!gameBoard.flat().includes('')) {
+            endGame('tie');
+        }
+    }
+
+    function endGame(result, ...winningCells) {
+        if (result === 'tie') {
+            document.getElementById("winMessage").innerHTML = "It's a <span class='tie'>tie</span>!";
+        } else {
+            document.getElementById("winMessage").innerHTML = "Player <span class='win'>" + result + "</span> wins!";
+            for (let i = 0; i < winningCells.length; i += 2) {
+                var row = winningCells[i];
+                var col = winningCells[i + 1];
+                document.getElementById("ticTacToe").rows[row].cells[col].classList.add("win");
+            }
+        }
+        // Disable further clicks
+        var cells = document.querySelectorAll('td');
+        cells.forEach(cell => {
+            cell.onclick = null;
+            cell.style.cursor = 'default';
+        });
+    }
+
+    function resetGame() {
+        currentPlayer = 'X';
+        gameBoard = [
+            ['', '', ''],
+            ['', '', ''],
+            ['', '', '']
+        ];
+        var cells = document.querySelectorAll('td');
+        cells.forEach(cell => {
+            cell.innerText = '';
+            cell.classList.remove("occupied", "win");
+            cell.onclick = function() {
+                var row = cell.parentNode.rowIndex;
+                var col = cell.cellIndex;
+                cellClicked(row, col);
+            };
+            cell.style.cursor = 'pointer';
+        });
+        document.getElementById("winMessage").innerText = '';
+        document.getElementById("playerTurn").innerText = "Player X";
+    }
+
+
+    function reLoadGame(){
+        location.reload();
+    }
+</script>
+
+</body>
+</html>
